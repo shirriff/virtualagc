@@ -22,13 +22,22 @@ MLOOP1          TS              MINECNT        # Copy 24 words from H0INIT to MI
                 CCS             MINECNT
                 TC              MLOOP1
 
-                # Display the values copied
+                # Test rotate right
                 CA              MINEH0       
-                TS              MPAC    +3
+                TS              MPAC
                 CA              MINEH0 + 1
-                TS              MPAC    +4
+                TS              MPAC    +1
                 CA              MINEH0 + 2
-                TS              MPAC    +5
+                TS              MPAC    +2
+
+                TC              ROR
+
+                CA              MPAC
+                TS              MPAC + 3
+                CA              MPAC + 1
+                TS              MPAC + 4
+                CA              MPAC + 2
+                TS              MPAC + 5
 
                 CAF             MPADR
                 TS              MPAC    +2
@@ -70,15 +79,62 @@ MINEQUIT        TC              FREEDSP         # Free the display and exit
                 TC              ENDOFJOB
 
 
+# Rotate right 1 bit
+# 32-bit value is stored as 2 bits, 15 bits, 15 bits
+# Value is in MPAC, MPAC + 1, MPAC + 2.
+# Uses MPAC + 4, MPAC + 5 for storing bottom bits
+
+# The idea is to test each bottom bit and set aside either 04000 or 0000, to put it
+# in the top bit of the next word.
+# Then shift right through SR.
+# Finally, add in the shifted-in bit from the previous word.
+
+ROR             CA              MPAC            # A = top two bits
+                TS              SR              # Store in shift-right register
+                MASK            N1              # Test bottom bit of original value
+                EXTEND
+                BZF             +2
+                CAF             TOPBIT
+                TS              MPAC + 4        # Remember shifted-out bit in top pos
+                CA              SR
+                TS              MPAC            # Write back shifted value
+                
+                CA              MPAC +1         # A = next 15 bits
+                TS              SR              # Store in shift-right register
+                MASK            N1              # Test bottom bit
+                EXTEND
+                BZF             +2
+                CAF             TOPBIT
+                TS              MPAC +5         # Remember shifted-out bit in top pos
+                CA              SR              # Read shifted value
+                MASK            NOTTOP          # Mask off top bit
+                AD              MPAC +4         # Add in shifed-in bit from previous word
+                TS              MPAC + 1        # Write back shifted value
+
+                CA              MPAC +2         # A = bottom 15 bits
+                TS              SR
+                MASK            N1              # Test bottom bit
+                DOUBLE                          # Shift bottom bit left
+                AD              MPAC            # Add to original word (wrapped bit)
+                CAF             TOPBIT
+                CA              SR              # Read shifted value
+                MASK            NOTTOP          # Mask off top bit
+                AD              MPAC +5         # Add in shifed-in bit from previous word
+                TS              MPAC + 2        # Write back shifted value
+                RETURN
+
 VERVNCON        OCT             00501
 MPADR           ADRES           MPAC    +3
+N1              DEC             1
 N23             DEC             23
+NOTTOP          OCT             37777           # Mask off top bit
+TOPBIT          OCT             40000           # Top bit set
 
 MINEBK          ECADR           MINEH0
 
 ENDVCHK         EQUALS
 H0INIT          OCT             152
-                OCT             236
+                OCT             237
                 OCT             3147
 H1INIT          OCT             273
                 OCT             3172
