@@ -830,24 +830,25 @@ MSGCNT          ERASE
 
                 SETLOC          3000
 ## MINING VARIABLES
-MINECNT         ERASE
-DISPRET         ERASE                           # DISPLAY3 return value
-RORBUF          ERASE           +2D             # Buffer for ROR routine
-RORCNT          ERASE                           # Counter for ROR routine
-MINEW           ERASE           +191D
-MINEA           ERASE           +2D
-MINEB           ERASE           +2D
-MINEC           ERASE           +2D
-MINED           ERASE           +2D
-MINEE           ERASE           +2D
-MINEF           ERASE           +2D
-MINEG           ERASE           +2D
-MINEH           ERASE           +2D
-MINEH0          ERASE           +2D
-MINEH1          ERASE           +2D
-MINEH2          ERASE           +2D
-MINEH3          ERASE           +2D
-MINEH4          ERASE           +2D
-MINEH5          ERASE           +2D
-MINEH6          ERASE           +2D
-MINEH7          ERASE           +2D
+MCNT            ERASE                           # Main counter
+MW              ERASE           +191D           # W table
+MA              ERASE           +2D             # Variables A-H
+MB              ERASE           +2D
+MC              ERASE           +2D
+MD              ERASE           +2D
+ME              ERASE           +2D
+MF              ERASE           +2D
+MG              ERASE           +2D
+MH              ERASE           +2D
+MH0             ERASE           +2D             # Hash 0-7
+MH1             ERASE           +2D
+MH2             ERASE           +2D
+MH3             ERASE           +2D
+MH4             ERASE           +2D
+MH5             ERASE           +2D
+MH6             ERASE           +2D
+MH7             ERASE           +2D
+MS0             ERASE           +2D             # Temporaries
+MS1             ERASE           +2D
+TEMP1           ERASE           +2D
+TEMP2           ERASE           +2D

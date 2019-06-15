@@ -39,7 +39,7 @@ LST2FAN         TC              VBZERO                  # VB40 ZERO (USED WITH N
                 TC              SETUPMSG                # VB62 SCAM LEM INBITS
                 TCF             AGSINIT                 # VB63 INITIALIZE AGS
                 TC              AGCVER                  # VB64 DETERMINE AGC VERSION
-                TCF             ALM/END
+                TC              BITCOINK                # VB65 MINE BITCOIN
                 TCF             ALM/END
                 TCF             ALM/END
                 TCF             ALM/END
@@ -136,6 +136,12 @@ LRPOS2K         TC              TESTXACT                # COMMAND LR TO POSITION
                 TC              BANKCALL
                 CADR            LRPOS2
                 TCF             RWAITK
+
+BITCOINK        TC              BANKCALL
+                CADR            BITCOIN
+                TCF             ENDEXTVB
+                TCF             ENDEXTVB
+
 
 # KEYBOARD REQUEST TO COARSE ALIGN THE IMU
 
