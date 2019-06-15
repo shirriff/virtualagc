@@ -22,36 +22,9 @@ H0LOOP          TS              MCNT        # Copy 24 words from H0INIT to MH0
                 CCS             MCNT
                 TC              H0LOOP
 
-                CCS             NEWJOB          # See if any jobs pending sowe
+                CCS             NEWJOB          # See if any jobs pending so we
                 TC              CHANG1          # don't crash into the Moon
 
-                # Test addition
-                CAF             N0
-                TS              MS0
-                CAF             N1
-                TS              MS0 +1
-                CAF             NOTTOP
-                TS              MS0 +2
-                CAF             MS0A
-                TC              DISPLAY3
-
-                CAF             N1
-                TS              MS1
-                TS              MS1 +1
-                TS              MS1 +2
-
-                CAF             MS1A
-                TC              DISPLAY3
-
-                CAF             MS0A
-                TS              MPAC
-                CAF             MS1A
-                TS              MPAC +1
-                TC              ADD
-
-                CAF             MS0A
-                TC              DISPLAY3
-                
                 CAF             N47
 INLOOP          TS              MCNT        # Copy 48 words (16 32words) from INPUT to MW
                 INDEX           A
@@ -93,9 +66,10 @@ INITLOOP        INDEX           MCNT
 
                 # S0 = W[i-15] rightshift 3. Zero top 3 bits for shift instead of rotate
                 CA              N0
-                TS              MS0             # Top 2 bits 0
+                CA              RORBUF
+                MASK            N1              # Zero 3 bits, keep 1 bit
+                TS              MS0
                 CA              RORBUF +1
-                MASK            NOTTOP          # Remove top bit from next word
                 TS              MS0 +1
                 CA              RORBUF +2
                 TS              MS0 +2
@@ -140,11 +114,11 @@ INITLOOP        INDEX           MCNT
                 TC              RORN            # rightrotate
 
                 # Mask to get rightshift 10 and store in S1
-                # Remove 2 bits from first word, top 8 from second word
+                # Remove 4 bits from first word, top 6 from second word
                 CA              N0
-                TS              MS1             # Top 2 bits 0
+                TS              MS1             # Top 4 bits 0
                 CA              RORBUF +1
-                MASK            N127          # Leave 7 bits in next word
+                MASK            N255          # Leave 8 bits in next word
                 TS              MS1 +1
                 CA              RORBUF +2
                 TS              MS1 +2
@@ -501,7 +475,7 @@ UPDATE          TS              MCNT
 
                 # Done
 
-MQUIT        TC              FREEDSP         # Free the display and exit
+MQUIT           TC              FREEDSP         # Free the display and exit
 
                 TC              ENDOFJOB
 
@@ -611,20 +585,13 @@ XOR             INDEX           MPAC +1
 
 # ADD value pointed to by MPAC+1 into value pointed to by MPAC
 # These are three-word values. Result truncated to 32 bits
-ADD             TS              A       # Clean up any overflow
-                TS              A
-                TS              A
-                INDEX           MPAC +1
+ADD             INDEX           MPAC +1
                 CA              2       # Second argument, word 2
                 INDEX           MPAC
                 AD              2       # Add first argument, word 2
                 INDEX           MPAC
-                TS              0       # Store back to first argument TODO
-                CAF             N6      # Skipped if overflow
-
-                INDEX           MPAC    # Test: store carry in word 1
-                TS              1
-                RETURN
+                TS              2       # Store back to first argument, word 2
+                CAF             N0      # Skipped if overflow
 
                 # A will be 0 (no overflow) or 1 (overflow)
                 # Add to second word of both arguments
@@ -642,18 +609,18 @@ ADD             TS              A       # Clean up any overflow
                 AD              0       # Add second argument
                 INDEX           MPAC
                 AD              0       # Add first argument
+                MASK            N15      # Want bottom 4 bits
                 INDEX           MPAC
-                MASK            N3      # Want just 2 bits
                 TS              0       # Store back to first argument
-                RETURN                  # First return could be skipped
+                RETURN                  # First return could be skipped?
                 RETURN
 
 # Rotate right N bits
-# 32-bit value is stored as 2 bits, 15 bits, 15 bits
+# 32-bit value is stored as 4 bits, 14 bits, 14 bits
 # Value is in ROR, ROR + 1, ROR + 2.
 # Uses MPAC + 4, MPAC + 5 for storing bottom bits
 
-# The idea is to test each bottom bit and set aside either 04000 or 0000, to put it
+# The idea is to test each bottom bit and set aside either 02000 or 0, to put it
 # in the top bit of the next word.
 # Then shift right through SR.
 # Finally, add in the shifted-in bit from the previous word.
@@ -665,7 +632,7 @@ RORN            EXTEND
                 DIM             A          # Decrement counter
 
 RORN1           TS              RORCNT
-                CA              RORBUF         # A = top two bits
+                CA              RORBUF         # A = top four bits
                 TS              SR              # Store in shift-right register
                 MASK            N1              # Test bottom bit of original value
                 EXTEND
@@ -675,7 +642,7 @@ RORN1           TS              RORCNT
                 CA              SR
                 TS              RORBUF         # Write back shifted value
                 
-                CA              RORBUF +1       # A = next 15 bits
+                CA              RORBUF +1       # A = next 14 bits
                 TS              SR              # Store in shift-right register
                 MASK            N1              # Test bottom bit
                 EXTEND
@@ -687,7 +654,7 @@ RORN1           TS              RORCNT
                 AD              MPAC +4         # Add in shifed-in bit from previous word
                 TS              RORBUF +1        # Write back shifted value
 
-                CA              RORBUF +2         # A = bottom 15 bits
+                CA              RORBUF +2         # A = bottom 14 bits
                 TS              SR
                 MASK            N1              # Test bottom bit
                 DOUBLE                          # Shift bottom bit left
@@ -750,6 +717,7 @@ N9              DEC             9
 N10             DEC             10
 N11             DEC             11
 N14             DEC             14
+N15             DEC             15
 N20             DEC             20
 N23             DEC             23
 N42             DEC             42
@@ -757,260 +725,257 @@ N43             DEC             43
 N44             DEC             44
 N47             DEC             47
 N48             DEC             48
-N127            DEC             127
+N255            DEC             255
 NM21            DEC             -21
 NM141           DEC             -141
-NOTTOP          OCT             37777           # Mask off top bit
-TOPBIT          OCT             40000           # Top bit set
-N77777          OCT             77777
+NOTTOP          OCT             17777           # Mask off top bit of 14-bit segment
+TOPBIT          OCT             20000           # Top bit set in 14-bit segment
+N37777          OCT             37777
 MINUSONE        DEC             -1
 
 # SHA-256 data
 
-H0INIT          OCT             1
-                OCT             52023
-                OCT             63147
-H1INIT          OCT             2
-                OCT             73317
+H0INIT          OCT             6
+                OCT             24047
+                OCT             23147
+H1INIT          OCT             13
+                OCT             26636
                 OCT             27205
-H2INIT          OCT             0
-                OCT             74335
-                OCT             71562
-H3INIT          OCT             2
-                OCT             45237
-                OCT             72472
-H4INIT          OCT             1
-                OCT             21034
-                OCT             51177
-H5INIT          OCT             2
-                OCT             33012
-                OCT             64214
-H6INIT          OCT             0
-                OCT             37407
-                OCT             54653
-H7INIT          OCT             1
-                OCT             33701
-                OCT             46431
-MK              OCT             1
-                OCT             2424
+H2INIT          OCT             3
+                OCT             30673
+                OCT             31562
+H3INIT          OCT             12
+                OCT             12477
+                OCT             32472
+H4INIT          OCT             5
+                OCT             2071
+                OCT             11177
+H5INIT          OCT             11
+                OCT             26025
+                OCT             24214
+H6INIT          OCT             1
+                OCT             37017
+                OCT             14653
+H7INIT          OCT             5
+                OCT             27603
+                OCT             6431
+MK              OCT             4
+                OCT             5050
                 OCT             27630
-                OCT             1
-                OCT             61156
-                OCT             42221
-                OCT             2
-                OCT             65601
-                OCT             75717
+                OCT             7
+                OCT             2335
+                OCT             2221
+                OCT             13
+                OCT             13403
+                OCT             35717
+                OCT             16
+                OCT             23327
+                OCT             15645
                 OCT             3
-                OCT             51553
-                OCT             55645
-                OCT             0
-                OCT             71255
-                OCT             41133
-                OCT             1
-                OCT             31742
+                OCT             22533
+                OCT             1133
+                OCT             5
+                OCT             23704
                 OCT             10761
-                OCT             2
-                OCT             22177
+                OCT             11
+                OCT             4376
                 OCT             1244
-                OCT             2
-                OCT             53070
-                OCT             57325
-                OCT             3
-                OCT             30017
+                OCT             12
+                OCT             26161
+                OCT             17325
+                OCT             15
+                OCT             20036
                 OCT             25230
-                OCT             0
-                OCT             22406
-                OCT             55401
-                OCT             0
-                OCT             44143
+                OCT             1
+                OCT             5015
+                OCT             15401
+                OCT             2
+                OCT             10306
                 OCT             2676
-                OCT             1
-                OCT             25030
-                OCT             76703
-                OCT             1
-                OCT             62574
-                OCT             56564
-                OCT             2
-                OCT             675
+                OCT             5
+                OCT             12061
+                OCT             36703
+                OCT             7
+                OCT             5371
+                OCT             16564
+                OCT             10
+                OCT             1572
                 OCT             30776
-                OCT             2
-                OCT             33670
+                OCT             11
+                OCT             27560
                 OCT             3247
-                OCT             3
-                OCT             1467
-                OCT             70564
-                OCT             3
-                OCT             44466
-                OCT             64701
-                OCT             3
-                OCT             57574
-                OCT             43606
+                OCT             14
+                OCT             3157
+                OCT             30564
+                OCT             16
+                OCT             11155
+                OCT             24701
+                OCT             16
+                OCT             37371
+                OCT             3606
                 OCT             0
-                OCT             17603
+                OCT             37406
                 OCT             16706
-                OCT             0
-                OCT             44031
+                OCT             2
+                OCT             10062
                 OCT             20714
-                OCT             0
-                OCT             55722
+                OCT             2
+                OCT             33644
                 OCT             26157
-                OCT             1
-                OCT             12351
+                OCT             4
+                OCT             24722
                 OCT             2252
-                OCT             1
-                OCT             34541
+                OCT             5
+                OCT             31302
                 OCT             24734
-                OCT             1
-                OCT             66763
+                OCT             7
+                OCT             15746
                 OCT             4332
-                OCT             2
-                OCT             30174
-                OCT             50522
-                OCT             2
-                OCT             50143
-                OCT             43155
-                OCT             2
-                OCT             60006
+                OCT             11
+                OCT             20371
+                OCT             10522
+                OCT             12
+                OCT             20307
+                OCT             3155
+                OCT             13
+                OCT             14
                 OCT             23710
-                OCT             2
-                OCT             77262
-                OCT             77707
-                OCT             3
-                OCT             6700
+                OCT             13
+                OCT             36545
+                OCT             37707
+                OCT             14
+                OCT             15600
                 OCT             5763
-                OCT             3
-                OCT             25517
+                OCT             15
+                OCT             13236
                 OCT             10507
                 OCT             0
-                OCT             6624
-                OCT             61521
-                OCT             0
-                OCT             24122
+                OCT             15451
+                OCT             21521
+                OCT             1
+                OCT             10244
                 OCT             24547
-                OCT             0
-                OCT             47556
+                OCT             2
+                OCT             17334
                 OCT             5205
-                OCT             0
-                OCT             56066
+                OCT             2
+                OCT             34154
                 OCT             20470
-                OCT             1
-                OCT             15130
-                OCT             66774
-                OCT             1
-                OCT             23160
+                OCT             4
+                OCT             32261
+                OCT             26774
+                OCT             5
+                OCT             6340
                 OCT             6423
-                OCT             1
-                OCT             45024
-                OCT             71524
-                OCT             1
-                OCT             66324
+                OCT             6
+                OCT             12051
+                OCT             31524
+                OCT             7
+                OCT             14650
                 OCT             5273
-                OCT             2
-                OCT             1605
-                OCT             44456
-                OCT             2
-                OCT             22344
+                OCT             10
+                OCT             3413
+                OCT             4456
+                OCT             11
+                OCT             4710
                 OCT             26205
-                OCT             2
-                OCT             42577
-                OCT             64241
-                OCT             2
-                OCT             50064
-                OCT             63113
-                OCT             3
-                OCT             2227
+                OCT             12
+                OCT             5377
+                OCT             24241
+                OCT             12
+                OCT             20151
+                OCT             23113
+                OCT             14
+                OCT             4456
                 OCT             5560
-                OCT             3
-                OCT             7330
-                OCT             50643
-                OCT             3
-                OCT             21445
-                OCT             64031
-                OCT             3
-                OCT             26462
-                OCT             3044
-                OCT             3
-                OCT             64034
-                OCT             32605
-                OCT             0
-                OCT             20325
-                OCT             20160
-                OCT             0
-                OCT             31511
-                OCT             40426
-                OCT             0
-                OCT             36156
-                OCT             66010
-                OCT             0
-                OCT             47220
-                OCT             73514
-                OCT             0
-                OCT             64541
-                OCT             36265
-                OCT             0
-                OCT             71070
-                OCT             6263
-                OCT             1
+                OCT             14
                 OCT             16661
+                OCT             10643
+                OCT             15
+                OCT             3113
+                OCT             24031
+                OCT             15
+                OCT             15144
+                OCT             3044
+                OCT             17
+                OCT             10070
+                OCT             32605
+                OCT             1
+                OCT             652
+                OCT             20160
+                OCT             1
+                OCT             23223
+                OCT             426
+                OCT             1
+                OCT             34335
+                OCT             26010
+                OCT             2
+                OCT             16441
+                OCT             33514
+                OCT             3
+                OCT             11302
+                OCT             36265
+                OCT             3
+                OCT             22160
+                OCT             6263
+                OCT             4
+                OCT             35542
                 OCT             25112
-                OCT             1
-                OCT             33471
-                OCT             45117
-                OCT             1
-                OCT             50134
-                OCT             67763
-                OCT             1
-                OCT             64437
+                OCT             5
+                OCT             27163
+                OCT             5117
+                OCT             6
+                OCT             20271
+                OCT             27763
+                OCT             7
+                OCT             11076
                 OCT             1356
-                OCT             1
-                OCT             70512
-                OCT             61557
-                OCT             2
-                OCT             4620
-                OCT             74024
-                OCT             2
-                OCT             14616
+                OCT             7
+                OCT             21225
+                OCT             21557
+                OCT             10
+                OCT             11441
+                OCT             34024
+                OCT             10
+                OCT             31434
                 OCT             1010
-                OCT             2
-                OCT             20575
-                OCT             77772
-                OCT             2
-                OCT             44240
-                OCT             66353
-                OCT             2
-                OCT             76763
+                OCT             11
+                OCT             1373
+                OCT             37772
+                OCT             12
+                OCT             10501
+                OCT             26353
+                OCT             13
+                OCT             35746
                 OCT             21767
-                OCT             3
-                OCT             6342
-                OCT             74362
-
-# Input chunk to hash
-
-INPUT           OCT             1
-                OCT             74044
+                OCT             14
+                OCT             14705
+                OCT             34362
+INPUT           OCT             7
+                OCT             30110
                 OCT             25606
-                OCT             0
-                OCT             50364
-                OCT             37367
-                OCT             3
-                OCT             52604
-                OCT             43740
                 OCT             2
-                OCT             55306
-                OCT             70221
-                OCT             3
-                OCT             14775
-                OCT             45770
-                OCT             1
-                OCT             37304
+                OCT             20750
+                OCT             37367
+                OCT             16
+                OCT             25411
+                OCT             3740
+                OCT             12
+                OCT             32615
+                OCT             30221
+                OCT             14
+                OCT             31773
+                OCT             5770
+                OCT             5
+                OCT             36610
                 OCT             11403
                 OCT             0
-                OCT             15470
+                OCT             33160
                 OCT             17611
-                OCT             1
-                OCT             25053
-                OCT             54746
-                OCT             2               # Padding
+                OCT             5
+                OCT             12127
+                OCT             14746
+                OCT             10
                 OCT             0
                 OCT             0
                 OCT             0
