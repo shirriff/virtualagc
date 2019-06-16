@@ -152,23 +152,22 @@ INITLOOP        INDEX           MCNT
                 TS              MW +50D
 
                 # Add S0 to W[i] (i.e. MCNT + 48)
-
-                CAF             MS0A
-                TS              MPAC +1
                 CAF             MW48A
                 AD              MCNT
                 TS              MPAC
+                CAF             MS0A
+                TS              MPAC +1
                 TC              ADD
 
                 # Add W[i-7] (i.e. MCNT + (16-7)*3 = 27)
                 CAF             MW27A
                 AD              MCNT
-                TS              MPAC
+                TS              MPAC +1
                 TC              ADD
 
                 # Add S1
                 CAF             MS1A
-                TS              MPAC
+                TS              MPAC +1
                 TC              ADD
 
                 # End of init loop, loop back.
