@@ -853,3 +853,4 @@ MS1             ERASE           +2D
 TEMP1           ERASE           +2D
 TEMP2           ERASE           +2D
 RORCNT		ERASE
+RORRET		ERASE

@@ -200,9 +200,9 @@ COPYAH          TS              MCNT        # Copy 24 words from H0... to A...
                 # Main loop, 64 times
                 # MCNT is the memory index from 0 to 63*3 in steps of 3.
                 CAF             N0
-MAINLOOP        TS              MCNT
+                TS              MCNT
 
-                CCS             NEWJOB          # See if any jobs pending
+MAINLOOP        CCS             NEWJOB          # See if any jobs pending
                 TC              CHANG1
 
                 # E rightrotate 6
@@ -310,10 +310,14 @@ MCHA            EQUALS          MS0A
                 TS              MPAC +1
                 TC              ADD
 
-                CCS             NEWJOB          # See if any jobs pending
-                TC              CHANG1
-
                 # Compute S0
+                # Load A into RORBUF
+                CA              MA
+                TS              RORBUF
+                CA              MA +1
+                TS              RORBUF +1
+                CA              MA +2
+                TS              RORBUF +2
                 # A rightrotate 2
                 CA              N2
                 TS              RORCNT
@@ -327,7 +331,6 @@ MCHA            EQUALS          MS0A
                 CA              RORBUF +2
                 TS              MS0 +2
 
-
                 # rightrotate 11 more to get rightrotate 13
                 CA              N11
                 TS              RORCNT
@@ -336,7 +339,7 @@ MCHA            EQUALS          MS0A
                 # XOR into S0
                 CAF             MS0A
                 TS              MPAC
-                TC              RORBUFA
+                CA              RORBUFA
                 TS              MPAC +1
                 TC              XOR
 
@@ -381,6 +384,7 @@ MAJA            EQUALS          MS1A
                 TS              MPAC
                 CAF             TEMP2A
                 TS              MPAC +1
+                TC              XOR
 
                 # B AND C into TEMP2
                 CA              MB
@@ -393,10 +397,10 @@ MAJA            EQUALS          MS1A
                 MASK            MC +2
                 TS              TEMP2 +2
 
-                # XOR TEMP2 into MAJ
+                # XOR TEMP2 into MAJ, yielding final MAJ value
                 TC              XOR
 
-                # TEMP2 = S0 + MAJ
+                # Compute TEMP2 = S0 + MAJ
                 # First TEMP2 = S0
                 CA              MS0
                 TS              TEMP2
@@ -413,14 +417,14 @@ MAJA            EQUALS          MS1A
                 TC              ADD
 
                 # Move A..G to B..H, i.e. move 21 words
-                # Need to start at H and work down
+                # Need to start at H and work down. Use MPAC as loop counter.
                 CAF             N20
-UPDATE          TS              MCNT
-                INDEX           MCNT
+UPDATE          TS              MPAC
+                INDEX           MPAC
                 CA              MA
-                INDEX           MCNT
+                INDEX           MPAC
                 TS              MA +3
-                CCS             MCNT
+                CCS             MPAC
                 TC              UPDATE
 
                 # E = D + TEMP1, so add TEMP1 to E (which received D above)
@@ -456,7 +460,7 @@ UPDATE          TS              MCNT
                 CAF             N0
                 TS              MCNT         # MCNT = 0 to 21 by 3
 
-                CAF             MH0A
+ADDLOOP         CAF             MH0A
                 AD              MCNT
                 TS              MPAC            # H0[cnt] += A[cnt]
                 CAF             MAA
@@ -469,7 +473,7 @@ UPDATE          TS              MCNT
                 TS              MCNT
                 AD              NM21             # loop while MCNT <= 21
                 EXTEND
-                BZMF            MAINLOOP
+                BZMF            ADDLOOP
 
 
                 # Would loop here if multiple chunks
@@ -477,9 +481,30 @@ UPDATE          TS              MCNT
                 CCS             NEWJOB          # See if any jobs pending
                 TC              CHANG1
 
-                # Display
-                CA              MS0A
+                # Check result: want last 6 words of hash MH0 to be 0.
+                CAF             N5
+CHECK           TS              MCNT
+                INDEX           MCNT
+                CA              MH0 + 18D # Check word
+                EXTEND
+                BZF             OKAY
+                TC              BAD             # If nonzero, bad
+OKAY            CCS             MCNT            # Otherwise okay for now
+                TC              CHECK
+
+                # Display success message
+                CA              GOODMSGA
                 TC              DISPLAY3
+
+                # Display final hash
+                CA              MH0A
+                TC              DISPLAY8
+                # Fall through to indicate end of data
+
+                # Display bad message
+BAD             CA              BADMSGA
+                TC              DISPLAY3
+
 
                 # Done
 
@@ -533,11 +558,12 @@ DISPLAY3        EXTEND
 # These are also used by DISPLAY3, so beware.
 # TEMP1 and TEMP2 are values used in the main SHA loop.
 # TEMP1 is also used by DISPLAY3.
-
 RORBUF          EQUALS          MPAC +2 # to MPAC+4, ROR uses MPAC+5, MPAC+6 for temps
 DISPRET         EQUALS          TEMP1
 DCNT            EQUALS          TEMP1 +1
 DISP8RET        EQUALS          TEMP1 +2
+
+
 # Display 8 octal 3-words on display
 # Pass address in A
 # Clobbers TEMP1
@@ -548,7 +574,8 @@ DISPLAY8        EXTEND
                 CAF             N0
                 TS              DCNT            # DCNT = 0
 
-D8LOOP          TC              DISPLAY3        # Display a triple
+D8LOOP          CA              MPAC +5         # Get data address
+                TC              DISPLAY3        # Display a triple
 
                 CA              DCNT            # DCNT increment
                 AD              N1
@@ -639,7 +666,7 @@ ADD             INDEX           MPAC +1
 # Finally, add in the shifted-in bit from the previous word.
 
 RORN            EXTEND
-                QXCH            DISPRET         # Save return addr
+                QXCH            RORRET         # Save return addr
                 CA              RORCNT
                 EXTEND
                 DIM             A          # Decrement counter
@@ -684,7 +711,7 @@ RORN1           TS              RORCNT
                 CCS             RORCNT
                 TC              RORN1
                 EXTEND
-                QXCH            DISPRET
+                QXCH            RORRET
                 RETURN
 
 # MPAC usage
@@ -713,6 +740,8 @@ TEMP1A          ADRES           TEMP1
 TEMP2A          ADRES           TEMP2
 MW27A           ADRES           MW +27D
 MW48A           ADRES           MW +48D
+BADMSGA         ADRES           BADMSG
+GOODMSGA        ADRES           GOODMSG
 
 MBK             ECADR           MH0
 
@@ -748,6 +777,13 @@ NOTTOP          OCT             17777           # Mask off top bit of 14-bit seg
 TOPBIT          OCT             20000           # Top bit set in 14-bit segment
 N37777          OCT             37777
 MINUSONE        DEC             -1
+BADMSG          OCT             11111
+                OCT             11111
+                OCT             11111
+GOODMSG         OCT             0
+                OCT             0
+                OCT             0
+
 
 # SHA-256 data
 
