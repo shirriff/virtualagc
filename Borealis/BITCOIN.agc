@@ -34,13 +34,12 @@ INLOOP          TS              MCNT        # Copy 48 words (16 32words) from IN
                 CCS             MCNT
                 TC              INLOOP
 
-                # Display W[0-8]
-                CAF             MWA
-                TC              DISPLAY8
-
                 # Loop to initialize W 16-63
+		# Instead of looping i from 16 to 63, we loop from 0 to 47.
+		# But we step by 3 since the elements are 3 words each.
+		# So MCNT = (i-16) * 3
                 CAF             N0
-                TS              MCNT         # MCNT = (i-16)*3. I.e. starts at 0 instead of 16, and counts over 3-word values.
+                TS              MCNT
 
 INITLOOP        INDEX           MCNT
                 CA              MW +3D      # W[i-15] to ROR
@@ -51,21 +50,16 @@ INITLOOP        INDEX           MCNT
                 INDEX           MCNT
                 CA              MW +5D
                 TS              RORBUF +2
-                CA              N7
-                TS              RORCNT
 
                 CCS             NEWJOB          # See if any jobs pending
                 TC              CHANG1          # Don't crash into the moon
 
-                # Display before rotation
-                CA              RORBUFA
-                TC              DISPLAY3
-
-                # Rotate
+                # Rotate 3
+                CA              N3
+                TS              RORCNT
                 TC              RORN            # rightrotate 3
 
                 # S0 = W[i-15] rightshift 3. Zero top 3 bits for shift instead of rotate
-                CA              N0
                 CA              RORBUF
                 MASK            N1              # Zero 3 bits, keep 1 bit
                 TS              MS0
@@ -94,6 +88,8 @@ INITLOOP        INDEX           MCNT
                 # XOR into s0
                 TC              XOR             # MPAC, MPAC+1 still set up
 
+                # Now compute S1
+
                 # Put w[i-2] in ROR
                 # Index is MCNT[(16-2)*3] = MCNT[42]
                 INDEX           MCNT
@@ -105,8 +101,6 @@ INITLOOP        INDEX           MCNT
                 INDEX           MCNT
                 CA              MW +44D
                 TS              RORBUF +2
-                CA              N7
-                TS              RORCNT
 
                 # Rightrotate 10
                 CA              N10
@@ -178,9 +172,12 @@ INITLOOP        INDEX           MCNT
                 TC              ADD
 
                 # End of init loop, loop back.
-                CCS             MCNT         # MCNT--
-                TC              INITLOOP
-
+                CA              MCNT         # MCNT += 3
+                AD              N3
+                TS              MCNT
+                AD              NM141             # loop while MCNT <= 141 (i.e. i <= 63)
+                EXTEND
+                BZMF            INITLOOP
 
 
 
@@ -434,12 +431,12 @@ UPDATE          TS              MCNT
                 TS              MA +1
                 CA              TEMP2 +2
                 TS              MA +2
-                
+
                 # End of main loop, loop back.
                 CA              MCNT         # MCNT += 3
                 AD              N3
                 TS              MCNT
-                AD              NM141             # loop while MCNT <= 141 (i.e. i <= 63)
+                AD              NM189             # loop while MCNT <= 189 (i.e. i <= 63)
                 EXTEND
                 BZMF            MAINLOOP
 
@@ -462,7 +459,7 @@ UPDATE          TS              MCNT
                 AD              NM21             # loop while MCNT <= 21
                 EXTEND
                 BZMF            MAINLOOP
-                
+
 
                 # Would loop here if multiple chunks
 
@@ -520,8 +517,13 @@ DISPLAY3        EXTEND
                 QXCH            DISPRET
                 RETURN
 
-RORCNT          EQUALS          MPAC +2
-RORBUF          EQUALS          MPAC +3 # to MPAC+5
+#The plan is that MPAC+0, MPAC+1 are used by XOR, ADD
+# MPAC+2, +3, +4 are used by ROR to hold the value and MPAC+5, MPAC+6 are used for temps
+# These are also used by DISPLAY3, so beware.
+# TEMP1 and TEMP2 are values used in the main SHA loop.
+# TEMP1 is also used by DISPLAY3.
+
+RORBUF          EQUALS          MPAC +2 # to MPAC+4, ROR uses MPAC+5, MPAC+6 for temps
 DISPRET         EQUALS          TEMP1
 DCNT            EQUALS          TEMP1 +1
 DISP8RET        EQUALS          TEMP1 +2
@@ -638,32 +640,34 @@ RORN1           TS              RORCNT
                 EXTEND
                 BZF             +2
                 CAF             TOPBIT
-                TS              MPAC + 4        # Remember shifted-out bit in top pos
+                TS              MPAC + 5        # Remember shifted-out bit in top pos
                 CA              SR
                 TS              RORBUF         # Write back shifted value
-                
+
                 CA              RORBUF +1       # A = next 14 bits
                 TS              SR              # Store in shift-right register
                 MASK            N1              # Test bottom bit
                 EXTEND
                 BZF             +2
                 CAF             TOPBIT
-                TS              MPAC +5         # Remember shifted-out bit in top pos
+                TS              MPAC +6         # Remember shifted-out bit in top pos
                 CA              SR              # Read shifted value
                 MASK            NOTTOP          # Mask off top bit
-                AD              MPAC +4         # Add in shifed-in bit from previous word
+                AD              MPAC +5         # Add in shifed-in bit from previous word
                 TS              RORBUF +1        # Write back shifted value
 
                 CA              RORBUF +2         # A = bottom 14 bits
                 TS              SR
                 MASK            N1              # Test bottom bit
-                DOUBLE                          # Shift bottom bit left
+                DOUBLE                          # Shift bottom bit left 3 positions
+                DOUBLE
+                DOUBLE
                 AD              RORBUF            # Add to original word (wrapped bit)
                 TS              RORBUF
                 CAF             TOPBIT
                 CA              SR              # Read shifted value
                 MASK            NOTTOP          # Mask off top bit
-                AD              MPAC +5         # Add in shifed-in bit from previous word
+                AD              MPAC +6         # Add in shifed-in bit from previous word
                 TS              RORBUF +2        # Write back shifted value
 
                 CCS             RORCNT
@@ -726,8 +730,9 @@ N44             DEC             44
 N47             DEC             47
 N48             DEC             48
 N255            DEC             255
-NM21            DEC             -21
-NM141           DEC             -141
+NM21            DEC             -21		# -7*3
+NM141           DEC             -141		# -(63-16)*3
+NM189           DEC             -189		# -63*3
 NOTTOP          OCT             17777           # Mask off top bit of 14-bit segment
 TOPBIT          OCT             20000           # Top bit set in 14-bit segment
 N37777          OCT             37777
