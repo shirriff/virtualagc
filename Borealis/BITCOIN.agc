@@ -218,11 +218,11 @@ MAINLOOP        TS              MCNT
 
                 # Store in S1
                 CA              RORBUF
-                TS              S1
+                TS              MS1
                 CA              RORBUF +1
-                TS              S1 +1
+                TS              MS1 +1
                 CA              RORBUF +2
-                TS              S1 +2
+                TS              MS1 +2
 
                 # rightrotate 5 more to get E rightrotate 11
                 CA              N5
@@ -244,6 +244,9 @@ MAINLOOP        TS              MCNT
                 # XOR into S1
                 TC              XOR
 
+                CCS             NEWJOB          # See if any jobs pending
+                TC              CHANG1
+
                 # Compute (NOT E) AND G, store in CH (S0's storage used for CH)
 MCH             EQUALS          MS0
 MCHA            EQUALS          MS0A
@@ -255,7 +258,7 @@ MCHA            EQUALS          MS0A
                 TS              MCH +1
                 CS              ME +2
                 MASK            MG +2
-                TS              MCH =2
+                TS              MCH +2
 
                 # Compute TEMP1 = E AND F
                 CA              ME
@@ -301,12 +304,16 @@ MCHA            EQUALS          MS0A
                 TS              MPAC +1
                 TC              ADD
 
-                # Add W{i]
+                # Add W{i] yielding final TEMP1
                 CAF             MWA
                 AD              MCNT
                 TS              MPAC +1
                 TC              ADD
 
+                CCS             NEWJOB          # See if any jobs pending
+                TC              CHANG1
+
+                # Compute S0
                 # A rightrotate 2
                 CA              N2
                 TS              RORCNT
@@ -319,6 +326,7 @@ MCHA            EQUALS          MS0A
                 TS              MS0 +1
                 CA              RORBUF +2
                 TS              MS0 +2
+
 
                 # rightrotate 11 more to get rightrotate 13
                 CA              N11
@@ -340,6 +348,10 @@ MCHA            EQUALS          MS0A
                 # XOR into S0
                 TC              XOR
 
+                CCS             NEWJOB          # See if any jobs pending
+                TC              CHANG1
+
+                # Compute MAJ
                 # A AND B, store in MAJ (use S1's storage for MAJ)
 MAJ             EQUALS          MS1
 MAJA            EQUALS          MS1A
