@@ -493,12 +493,23 @@ OKAY            CCS             MCNT            # Otherwise okay for now
                 TC              CHECK
 
                 # Display success message
-                CA              GOODMSGA
-                TC              DISPLAY3
+                #CA              GOODMSGA
+                #TC              DISPLAY3
 
-                # Display final hash
-                CA              MH0A
-                TC              DISPLAY8
+                # Display final hash: Loop 8 times
+                CAF             N21
+                TS              MCNT         # MCNT = 21 to 0 by -3
+DISPLOOP        CAF             MH0A
+                AD              MCNT
+                TC              DISPLAY3
+                CA              MCNT         # MCNT -= 3
+                AD              NM3
+                TS              MCNT
+                AD              N3             # loop while MCNT >= 0
+                EXTEND
+                BZMF            BAD
+                TC              DISPLOOP
+
                 # Fall through to indicate end of data
 
                 # Display bad message
@@ -561,35 +572,7 @@ DISPLAY3        EXTEND
 RORBUF          EQUALS          MPAC +2 # to MPAC+4, ROR uses MPAC+5, MPAC+6 for temps
 DISPRET         EQUALS          TEMP1
 DCNT            EQUALS          TEMP1 +1
-DISP8RET        EQUALS          TEMP1 +2
 
-
-# Display 8 octal 3-words on display
-# Pass address in A
-# Clobbers TEMP1
-DISPLAY8        EXTEND
-                QXCH            DISP8RET          # Remember return address
-                TS              MPAC +5         # Remember data address
-
-                CAF             N0
-                TS              DCNT            # DCNT = 0
-
-D8LOOP          CA              MPAC +5         # Get data address
-                TC              DISPLAY3        # Display a triple
-
-                CA              DCNT            # DCNT increment
-                AD              N1
-                TS              MCNT
-                CA              MPAC +5         # Increment MPAC+5 pointer by 3
-                AD              N3
-                TS              MPAC +5
-                AD              NM21             # loop while DCNT <= 7
-                EXTEND
-                BZMF            D8LOOP
-
-                EXTEND
-                QXCH            DISP8RET
-                RETURN
 
 # XOR value pointed to by MPAC+1 into value pointed to by MPAC
 XOR             INDEX           MPAC +1
@@ -763,6 +746,7 @@ N11             DEC             11
 N14             DEC             14
 N15             DEC             15
 N20             DEC             20
+N21             DEC             21
 N23             DEC             23
 N42             DEC             42
 N43             DEC             43
@@ -770,6 +754,7 @@ N44             DEC             44
 N47             DEC             47
 N48             DEC             48
 N255            DEC             255
+NM3             DEC             -3
 NM21            DEC             -21		# -7*3
 NM141           DEC             -141		# -(63-16)*3
 NM189           DEC             -189		# -63*3
