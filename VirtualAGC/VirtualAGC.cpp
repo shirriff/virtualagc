@@ -111,6 +111,9 @@
  *          			and removed the attempt to deduce an appropriate setting from
  *          			the number of pixels on the display ... which didn't seem to
  *          			work well anyway.
+ *          	2019-07-23 RSB	Added SundialE.  I don't seem to have noted when I earlier
+ *          			added Retread50, and perhaps other stuff.  What's the deal?
+ *          	2019-07-28 RSB  Added Luminary 99 Rev 2 and Luminary 130.
  *
  * This file was originally generated using the wxGlade RAD program.
  * However, it is now maintained entirely manually, and cannot be managed
@@ -166,6 +169,9 @@ static const missionAlloc_t missionConstants[ID_AGCCUSTOMBUTTON
 	    { "Apollo 6 Command Module", "Solarium055/MAIN.agc.html",
 		"Click this to select the unmanned Apollo 6 Block 1 CM mission, running software SOLARIUM 55.",
 		ENABLED, CM, BLOCK1, NO_PERIPHERALS, "Solarium055", "CM0.ini" },
+	    { "2TV-1 Command Module", "SundialE/MAIN.agc.html",
+		"Click this to select the 2TV-1 mission, running software Sundial E.",
+		ENABLED, CM, BLOCK2, PERIPHERALS, "SundialE", "CM.ini" },
 	    { "Apollo 7 Command Module", "",
 		"Click this to select the Apollo 7 mission.", DISABLED, CM,
 		BLOCK2, PERIPHERALS, "", "CM.ini" },
@@ -181,20 +187,23 @@ static const missionAlloc_t missionConstants[ID_AGCCUSTOMBUTTON
 	    { "Apollo 10 Command Module", "",
 		"Click this to select the CM for the Apollo 10 mission.",
 		DISABLED, CM, BLOCK2, PERIPHERALS, "", "CM.ini" },
-	    { "Apollo 10 Lunar Module", "Luminary069/MAIN.agc.html",
+            { "Luminary 69 rev 0", "Luminary069/MAIN.agc.html",
+                "Click this to select Luminary 69 rev 0, a preliminary revision of the Apollo 10 LM software.",
+                ENABLED, LM, BLOCK2, PERIPHERALS, "Luminary069", "CM.ini" /* Yes, the CM is intentional */},
+	    { "Apollo 10 Lunar Module", "LUM69R2/MAIN.agc.html",
 		"Click this to select the LM for the Apollo 10 mission.",
-		ENABLED, LM, BLOCK2, PERIPHERALS, "Luminary069", "CM.ini" /* Yes, the CM is intentional */},
+		ENABLED, LM, BLOCK2, PERIPHERALS, "LUM69R2", "CM.ini" /* Yes, the CM is intentional */},
 	    { "Apollo 11 Command Module", "Comanche055/MAIN.agc.html",
 		"Click this to select the CM for the Apollo 11 mission, running software COMANCHE 55.",
 		ENABLED, CM, BLOCK2, PERIPHERALS, "Comanche055", "CM.ini" },
-	    { "Apollo 11 Lunar Module rev 0", "LMY99R0/MAIN.agc.html",
-		"Click this to select the LM for the Apollo 11 mission, running reconstructed software LUMINARY 99 Rev 0.",
+	    { "Luminary 99 Rev 0", "LMY99R0/MAIN.agc.html",
+		"Click this to select Luminary 99 rev 0, a preliminary revision of the Apollo 11 LM software.",
 		ENABLED, LM, BLOCK2, PERIPHERALS, "LMY99R0", "LM.ini" },
 	    { "Apollo 11 Lunar Module rev 1", "Luminary099/MAIN.agc.html",
 		"Click this to select the LM for the Apollo 11 mission, running software LUMINARY 99 Rev 1.",
 		ENABLED, LM, BLOCK2, PERIPHERALS, "Luminary099", "LM.ini" },
-	    { "Apollo 11 Lunar Module rev 2", "LUM99R2/MAIN.agc.html",
-		"Click this to select the LM for the Apollo 11 mission, running reconstructed software LUMINARY 99 Rev 2.",
+	    { "Luminary 99 rev 2", "LUM99R2/MAIN.agc.html",
+		"Click this to select Luminary 99 rev 2, a hypthetical revision of the Apollo 11 LM software.",
 		ENABLED, LM, BLOCK2, PERIPHERALS, "LUM99R2", "LM.ini" },
 	    { "Apollo 12 Command Module", "",
 		"Click this to select the CM for the Apollo 12 mission.",
@@ -205,6 +214,9 @@ static const missionAlloc_t missionConstants[ID_AGCCUSTOMBUTTON
 	    { "Apollo 13 Command Module", "",
 		"Click this to select the CM for the Apollo 13 mission.",
 		DISABLED, CM, BLOCK2, PERIPHERALS, "", "CM.ini" },
+            { "Luminary 130", "Luminary130/MAIN.agc.html",
+                "Click this to select Luminary 130, a preliminary revision of the Apollo 13 LM software.",
+                ENABLED, LM, BLOCK2, PERIPHERALS, "Luminary130", "LM.ini" },
 	    { "Apollo 13 Lunar Module", "Luminary131/MAIN.agc.html",
 		"Click this to select the LM for the Apollo 13 mission, running software LUMINARY 131.",
 		ENABLED, LM, BLOCK2, PERIPHERALS, "Luminary131", "LM.ini" },
@@ -232,6 +244,9 @@ static const missionAlloc_t missionConstants[ID_AGCCUSTOMBUTTON
 	    { "RETREAD 44 (LM)", "Retread44/MAIN.agc.html",
 		"Click this to select the RETREAD 44 (earliest non-mission LM) software.",
 		ENABLED, LM, BLOCK2, NO_PERIPHERALS, "Retread44", "LM0.ini" },
+	    { "RETREAD 50 (LM)", "Retread50/MAIN.agc.html",
+		"Click this to select the RETREAD 50 software.",
+		ENABLED, LM, BLOCK2, NO_PERIPHERALS, "Retread50", "LM0.ini" },
 	    { "AURORA 12 (LM)", "Aurora12/MAIN.agc.html",
 		"Click this to select the AURORA 12 (early non-mission LM) software.  This is the last AGC version with full testing capabilities.",
 		ENABLED, LM, BLOCK2, NO_PERIPHERALS, "Aurora12", "LM0.ini" },
@@ -692,17 +707,22 @@ EVT_RADIOBUTTON(ID_APOLLO3CMBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_APOLLO4CMBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_APOLLO5LMBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_APOLLO6CMBUTTON, VirtualAGC::ConsistencyEvent)
+EVT_RADIOBUTTON(ID_SUNDIALECMBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_APOLLO7CMBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_APOLLO8CMBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_APOLLO9CMBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_APOLLO9LMBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_APOLLO10CMBUTTON, VirtualAGC::ConsistencyEvent)
+EVT_RADIOBUTTON(ID_LUM69BUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_APOLLO10LMBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_COMANCHE55BUTTON, VirtualAGC::ConsistencyEvent)
+EVT_RADIOBUTTON(ID_LMY99R0BUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_LUMINARY99BUTTON, VirtualAGC::ConsistencyEvent)
+EVT_RADIOBUTTON(ID_LUM99R2BUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_APOLLO12CMBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_APOLLO12LMBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_APOLLO13CMBUTTON, VirtualAGC::ConsistencyEvent)
+EVT_RADIOBUTTON(ID_LUMINARY130BUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_LUMINARY131BUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_APOLLO14CMBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_APOLLO14LMBUTTON, VirtualAGC::ConsistencyEvent)
@@ -712,12 +732,12 @@ EVT_RADIOBUTTON(ID_SKYLABCMBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_SOYUZCMBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_VALIDATIONBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_RETREAD44BUTTON, VirtualAGC::ConsistencyEvent)
+EVT_RADIOBUTTON(ID_RETREAD50BUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_AURORA12BUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_SUNBURST37BUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_ZERLINA56BUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_SUPERJOBBUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_AGCCUSTOMBUTTON, VirtualAGC::ConsistencyEvent)
-EVT_RADIOBUTTON(ID_LUM99R2BUTTON, VirtualAGC::ConsistencyEvent)
 EVT_RADIOBUTTON(ID_BOREALISBUTTON, VirtualAGC::ConsistencyEvent)
 END_EVENT_TABLE();
 
